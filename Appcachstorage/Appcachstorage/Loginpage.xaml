@@ -7,8 +7,9 @@
         <StackLayout>
             <StackLayout>
                 <Label Text="Login page" FontSize="Medium" HorizontalTextAlignment="Center"></Label>
-                
-                <Entry x:Name="txtName" Placeholder="Enter Name"></Entry>
+
+                <Entry x:Name="userNameEntry" Placeholder="Enter Name"></Entry>
+                <Entry x:Name="passwordEntry" Placeholder="Enter Password"></Entry>
 
                 <controls:CheckBox DefaultText="Save Username" x:Name="Checkbox" Checked="False" HorizontalOptions="Fill"/>
                 <Button x:Name="btnStore" Text="Store"></Button>
