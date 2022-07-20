@@ -1,0 +1,43 @@
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Refit;
+using ValoTool.Model;
+using ValoTool.Services.ApiConstrant;
+
+namespace ValoTool.Services
+{
+    public interface IBackendRestService
+    {
+        [Post("/api/v1/users/login")]
+        Task<HttpResponseMessage> SaleforceLogin([Body(BodySerializationMethod.Serialized)] LoginRequest loginRequest);
+
+    }
+
+
+    public class BackendRestService : IBackendRestService
+    {
+
+        public async Task<HttpResponseMessage> SaleforceLogin(LoginRequest loginRequest)
+        {
+            try
+            {
+                HttpClient client = new HttpClient()
+                {
+                    BaseAddress = new Uri(UrlConstrant.loginurl),
+                    Timeout = new TimeSpan(0, 0, 30)
+                };
+
+                IBackendRestService backendRestService;
+                backendRestService = RestService.For<IBackendRestService>(client);
+
+                var result = await backendRestService.SaleforceLogin(loginRequest);
+                return result;
+            }catch(Exception e)
+            {
+                return null;
+
+            }
+        }
+    }
+}
