@@ -1,0 +1,146 @@
+using SQLite;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
+using ValoTool.Model;
+
+namespace ValoTool.DataBaseConnection
+{
+    public class Database
+    {
+        private readonly SQLiteAsyncConnection conn;
+        DBContext databaseContext;
+        public Database(string dbPath)
+        {
+            conn = new SQLiteAsyncConnection(dbPath);
+            this.databaseContext = new DBContext();
+        }
+
+
+
+        #region inset ,update,get brands into the databse
+        public Task<int> SaveBrandsList(List<Brands> brands)
+        {
+            return conn.InsertAllAsync(brands);
+        }
+
+        public Task<List<Brands>> GetBrands()
+        {
+            try
+            {
+                return conn.Table<Brands>().ToListAsync();
+            }
+            catch (Exception e)
+            {
+                return null;
+            }
+        }
+        #endregion
+
+
+        /// <summary>
+        /// To Save data
+        /// </summary>
+        /// <typeparam name="T">Type of any object</typeparam>
+        /// <param name="data">actual data</param>
+        /// <param name="action"></param>
+        public void SaveData<T>(T data, Action<SQLiteConnection> action = null) where T : class, new()
+        {
+            lock (DBContext.SyncLockObj)
+            {
+                using (var connection = this.databaseContext.GetDatabase())
+                {
+                    connection.BeginTransaction();
+                    connection.InsertOrReplace(data, typeof(T));
+                    action?.Invoke(connection);
+                    connection.Commit();
+                }
+            }
+        }
+
+        /// <summary>
+        /// To Save multiple data
+        /// </summary>
+        /// <typeparam name="T">Type of any object</typeparam>
+        /// <param name="data">actual data</param>
+        /// <param name="action"></param>
+        public void SaveMultipleData<T>(List<T> data, bool replace = true, Action<SQLiteConnection> action = null) where T : class, new()
+        {
+            lock (DBContext.SyncLockObj)
+            {
+                using (var connection = this.databaseContext.GetDatabase())
+                {
+                    connection.BeginTransaction();
+                    foreach (var item in data)
+                    {
+                        var temp = connection.InsertOrReplace(item, typeof(T));
+                    }
+                    connection.Commit();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get all the records
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public List<T> GetAll<T>(Expression<Func<T, bool>> predicate = null) where T : class, new()
+        {
+            lock (DBContext.SyncLockObj)
+            {
+                using (var connection = this.databaseContext.GetDatabase())
+                {
+                    if (predicate != null)
+                    {
+                        return connection.Table<T>().Where(predicate).ToList();
+                    }
+                    return connection.Table<T>().Select(a => a).ToList();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Delete the specific record
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="expression">Condition</param>
+        public void Delete<T>(Expression<Func<T, bool>> expression) where T : class, new()
+        {
+            using (var connection = this.databaseContext.GetDatabase())
+            {
+                connection.Table<T>().Delete(expression);
+            }
+        }
+        
+        /// <summary>
+        /// Delete all the specified record
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void DeleteAll<T>() where T : class, new()
+        {
+            lock (DBContext.SyncLockObj)
+            {
+
+                using (var connection = this.databaseContext.GetDatabase())
+                {
+                    connection.BeginTransaction();
+                    connection.DeleteAll<T>();
+                    connection.Commit();
+                }
+            }
+        }
+
+        public void Update(string query)
+        {
+            using (var connection = this.databaseContext.GetDatabase())
+            {                
+                connection.Execute(query) ;
+            }
+        }
+    }
+}
