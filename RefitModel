@@ -1,0 +1,74 @@
+using SQLite;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using ValoTool.Model;
+
+namespace ValoTool.DataBaseConnection
+{
+    public class DBContext
+    {
+
+        /// <summary>
+        /// Gets the instance
+        /// </summary>
+        public static DBContext Instance { get; } = new DBContext();
+
+        /// <summary>
+        /// The sync lock object
+        /// </summary>
+        public static readonly object SyncLockObj = new object();
+
+        private static Database database;
+        public static Database Database { get; set; }
+
+
+        /// <summary>
+        /// The databse file full name
+        /// </summary>
+        public static string databaseFileFullName;
+        public void Initialize()
+        {
+            databaseFileFullName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ValoTool.db3");
+            if (database == null)
+            {
+                database = new Database(databaseFileFullName);
+                Database = database;
+                CreateTables();
+            }            
+        }
+
+        
+        /// <summary>
+        /// GetDatabase
+        /// </summary>
+        /// <returns>SQLiteConnection</returns>
+        internal SQLiteConnection GetDatabase()
+        { 
+        return new SQLiteConnection(databaseFileFullName);
+        }
+
+        internal void CreateTables()
+        {
+            try
+            {
+                SQLiteConnection conn = new SQLiteConnection(databaseFileFullName);
+                conn.CreateTable<Brands>();
+                conn.CreateTable<CpkcphAxleInformationModel>();
+                conn.CreateTable<AxleVisibilityModel>();
+                conn.CreateTable<CustomerInfoModel>();
+                conn.CreateTable<FleetInformationModel>();
+                conn.CreateTable<TireInformationModel>();
+                conn.CreateTable<FuelToolHomePageModel>();
+                conn.CreateTable<FuelToolCurrentPageModel>();
+                conn.CreateTable<FuelToolProposedPageModel>();
+                conn.CreateTable<RetreadingHomePageModel>();
+                conn.CreateTable<LoginPageModel>();
+                conn.CreateTable<DowntimeHomePageModel>();
+                conn.CreateTable<AlignmentLandingPageModel>();
+            }
+            catch (Exception ex) { }
+        }
+    }
+}
