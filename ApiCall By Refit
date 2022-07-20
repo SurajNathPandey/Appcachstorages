@@ -1,0 +1,53 @@
+using Refit;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using ValoTool.Model;
+using ValoTool.Services.ApiConstrant;
+
+namespace ValoTool.Services
+{
+    public interface IAnalyticsHomeRestService
+    {
+        [Post("/valotool-analytics/event")]
+         
+
+        Task<HttpResponseMessage> AnalayticsHome([Body(BodySerializationMethod.Serialized)] AnalyticsHomeRequestModel AnalyticshomeRequest);
+    }
+
+    public class BackendAnalyticsHomeSevice : IAnalyticsHomeRestService
+    {
+
+        public async Task<HttpResponseMessage> AnalayticsHome(AnalyticsHomeRequestModel AnalyticshomeRequest)
+        {
+            try
+            {
+                HttpClient client = new HttpClient()
+                {
+                    
+                    BaseAddress = new Uri(UrlConstrant.eventanlytics),
+                   
+                Timeout = new TimeSpan(0, 0, 30)
+                };
+                client.DefaultRequestHeaders.Add("X-API-KEY","a109d92a-ea31-4b95-b4f4-26eeba10eefb");
+                
+                IAnalyticsHomeRestService backendRestService;
+                backendRestService = RestService.For<IAnalyticsHomeRestService>(client);
+
+                var result = await backendRestService.AnalayticsHome(AnalyticshomeRequest);
+               
+                return result;
+            }
+            catch (Exception e)
+            {
+                return null;
+
+            }
+        }
+
+         
+    }
+}
+
