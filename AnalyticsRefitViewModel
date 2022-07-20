@@ -1,0 +1,344 @@
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using ValoTool.DataBaseConnection;
+using ValoTool.Mobile_view.MobileHome;
+using ValoTool.Model;
+using ValoTool.Services;
+using ValoTool.View.FuelTool;
+using Xamarin.Essentials;
+using Xamarin.Forms;
+
+namespace ValoTool
+{
+    public class LoginPageViewModel: BaseViewModel, INotifyPropertyChanged
+    {
+        private readonly INavigation Navigation;
+
+        public Command LoginButtonCommand
+        {
+            get; set;
+        }
+
+        private string _Username = "integrationuser.coe@michelin.com.coe";
+        public string Username
+        {
+            get
+            {
+                return _Username;
+            }
+            set
+            {
+                _Username = value;
+                OnPropertyChanged("Username");
+            }
+        }
+        private string _Password = "Integration@09BfXFXdO0QB5YdwNXjLHZaEIur";
+        public string Password
+        {
+            get
+            {
+                return _Password;
+            }
+            set
+            {
+                _Password = value;
+                OnPropertyChanged("Password");
+            }
+        }
+
+        private DateTime _DateVisitCount = DateTime.Today.Date;
+        public DateTime DateVisitCount
+        {
+            get
+            {
+              return  _DateVisitCount;
+
+            }
+            set
+            {
+                _DateVisitCount = value;
+                OnPropertyChanged("DateVisitCount");
+
+            }
+        }
+
+        private string userEmail;
+        public string _userEmail
+        {
+            get
+            {
+                return userEmail;
+            }
+            set
+            {
+                userEmail = value;
+                OnPropertyChanged("userEmail");
+            }
+        }
+
+        private string userId;
+        public string _userId
+        {
+            get
+            {
+                return _userId;
+            }
+            set
+            {
+                _userId = value;
+                OnPropertyChanged("userId");
+            }
+        }
+
+        private string region;
+        public string _region
+        {
+            get
+            {
+                return _region;
+            }
+            set
+            {
+                _region = value;
+                OnPropertyChanged("region");
+            }
+        }
+
+        private string id;
+        public string _id
+        {
+            get
+            {
+                return _id;
+            }
+            set
+            {
+                _id = value;
+                OnPropertyChanged("id");
+            }
+        }
+
+
+        private string country;
+        public string _country
+        {
+            get
+            {
+                return country;
+            }
+            set
+            {
+                country = value;
+                OnPropertyChanged("region");
+            }
+        }
+        private string UserTimeZone;
+        public string _UserTimeZone
+        {
+            get
+            {
+                return UserTimeZone;
+            }
+            set
+            {
+                country = value;
+                OnPropertyChanged("UserTimeZone");
+            }
+        }
+
+
+        public new event PropertyChangedEventHandler PropertyChanged;
+
+        private new void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+        public static LoginPageModel Model { get; set; }
+
+        public LoginPageViewModel(INavigation navigation)
+        {
+            this.Navigation = navigation;
+            if (Model == null)
+            {
+                Model = new LoginPageModel();
+                if (DBContext.Database.GetAll<LoginPageModel>().Count != 0)
+                    Model = DBContext.Database.GetAll<LoginPageModel>()[0];
+                if(Model.AppVisitCout!=null)
+                {
+                    Model.AppVisitCout++;
+                    DBContext.Database.Update("UPDATE LoginPageModel SET AppVisitCout ='" + Model.AppVisitCout + "';");
+
+
+                }
+            }
+
+            if(Model.DateVisitCount.Date!=DateTime.Today.Date && Model.DateVisitCount!=null)
+            {
+                this.Apicall();
+
+            }
+
+            LoginButtonCommand = new Command(
+                execute:async () =>
+               {
+                   // await LoginButtonCommandMethod();
+                   await SSOLogin();
+               },
+                canExecute: () =>
+               {
+                   return true;
+               });
+        }
+      
+        public async void Apicall()
+        {
+                NetworkAccess networkAccess = Connectivity.NetworkAccess;
+
+            if (networkAccess == NetworkAccess.Internet)
+            {
+                BackendAnalyticsHomeSevice backendRestService = new BackendAnalyticsHomeSevice();
+
+                AnalyticsHomeRequestModel AnalyticshomeRequest = new AnalyticsHomeRequestModel
+                {
+
+                    userId = Model.userId,
+                    userEmail = Model.userEmail,
+                    region = "R5",
+                    country = Model.UserTimeZone,
+                    date =6,
+                    month = 1,
+                    year = 2022,
+                    week = 1,
+                    count = Model.AppVisitCout,
+                    lastAccessAt = "2022-05-09T11:15:42.373Z",
+                    loginAt = "2022-05-09T11:15:42.373Z",
+
+ 
+                };
+
+                 
+                var anlyticsresult = await backendRestService.AnalayticsHome(AnalyticshomeRequest);
+                string retun_value_homeAlylatics = await anlyticsresult.Content.ReadAsStringAsync();
+                var AnalyticsHomeResponse = JsonConvert.DeserializeObject<AnalytucsHomeResponseModel>(retun_value_homeAlylatics);
+
+
+                 
+
+            }
+
+            DBContext.Database.DeleteAll<LoginPageModel>();
+            
+
+        }
+
+        int AppVisitCout = 0;
+
+
+
+        private async Task SSOLogin()
+        {
+            if (Model.AppVisitCout == 0)
+            {
+                AppVisitCout++;
+            }
+            try
+            {
+                NetworkAccess networkAccess = Connectivity.NetworkAccess;
+
+                if (networkAccess == NetworkAccess.Internet)
+                {
+                    BackendRestService backendRestService = new BackendRestService();
+
+                    LoginRequest loginRequest = new LoginRequest
+                    {
+                        username = Username,
+                        password = Password
+                    };
+
+                    var result = await backendRestService.SaleforceLogin(loginRequest);
+                    string return_value_login = await result.Content.ReadAsStringAsync();
+                    var loginResponse_response = JsonConvert.DeserializeObject<LoginResponse>(return_value_login);
+
+                    userEmail = loginResponse_response.Result.UserEmail;
+                    id = loginResponse_response.Result.ProfileId;
+                    userId = loginResponse_response.Result.UserId;
+                    UserTimeZone = loginResponse_response.Result.UserTimeZone;
+
+                    Model.id = id;
+                    Model.userId = userId;
+                    Model.userEmail = userEmail;
+                    Model.UserTimeZone = UserTimeZone;
+                    Model.DateVisitCount = DateVisitCount;
+
+                    DBContext.Database.SaveData<LoginPageModel>(Model);
+
+                    if (!string.IsNullOrEmpty(loginResponse_response.Result.SessionId))
+                    { 
+                        await SecureStorage.SetAsync("token", loginResponse_response.Result.SessionId); 
+                        if (Device.RuntimePlatform == Device.iOS || Device.RuntimePlatform == Device.Android)
+                        {
+                            await Navigation.PushAsync(new HomePage_M());
+                        }
+                        else
+                        {
+                            App.importingbrandstosqlite.Insertintodb();
+                            await Navigation.PushModalAsync(new HomePageDetail());
+                        }
+                    }
+                    else
+                    {
+                        if (Device.RuntimePlatform == Device.iOS || Device.RuntimePlatform == Device.Android)
+                        {
+                            await Navigation.PushAsync(new HomePage_M());
+                        }
+                        else
+                        {
+                            App.importingbrandstosqlite.Insertintodb();
+                            await Navigation.PushModalAsync(new HomePageDetail());
+                        }
+                    }
+                }
+                else
+                {
+                    Model = new LoginPageModel();
+                    if (DBContext.Database.GetAll<LoginPageModel>().Count != 0)
+                        Model = DBContext.Database.GetAll<LoginPageModel>()[0];
+                    if (Model.AppVisitCout != null)
+                    {
+                        Model.AppVisitCout++;
+                        DBContext.Database.Update("UPDATE LoginPageModel SET AppVisitCout ='" + Model.AppVisitCout + "';");
+
+
+                    }
+
+
+
+                }
+            }
+            catch (Exception e)
+            { }
+        }
+
+        private async Task LoginButtonCommandMethod()
+        {
+            if (Device.RuntimePlatform == Device.iOS || Device.RuntimePlatform == Device.Android)
+            {
+                await Navigation.PushAsync(new HomePage_M());
+            }
+            else
+            {
+                App.importingbrandstosqlite.Insertintodb();
+                await Navigation.PushModalAsync(new HomePageDetail());
+            }
+        }
+    }
+}
